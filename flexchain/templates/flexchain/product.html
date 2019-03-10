@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+
+{% load crispy_forms_tags %}
+
+{% block static_includes %}
+{% include 'base_static_includes.html' %}
+{% endblock %}
+
+{% block header %}
+{% include 'base_header.html' %}
+{% endblock %}
+{% block body %}
+<div class="row">
+    {% include 'base_side_navigation.html' %}
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header">
+                <h1>Products</h1>
+            </div>
+            <div class="card-body">
+                <form action="{% url 'product' %}" method="POST" enctype="multipart/form-data">
+                    {% if has_product and has_product_sales and product_table%}
+                    {{ product_table.render }}
+                    {% else %}
+                    {% csrf_token %} {# Prevents other websites from submitting this form #}
+                    {% crispy product_csv_upload_form %}
+                    {% endif %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

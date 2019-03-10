@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}{% endblock %}</title>
+    {% block static_includes %}
+    {% endblock %}
+</head>
+<body>
+<div class="col-md-12">
+    <div class="flex-container">
+        {% block header %}
+        {% endblock %}
+        {% block body %}
+        {% endblock %}
+    </div>
+</div>
+<script>
+    {% block javascript %}
+        $(document).ready(function () {
+            var links = $('.nav li a');
+            $.each(links, function (key, va) {
+                if (va.href === document.URL) {
+                    $(this).addClass('active');
+                }
+            });
+        });
+    {% endblock %}
+
+</script>
+</body>
+</html>

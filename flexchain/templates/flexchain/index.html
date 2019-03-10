@@ -1,0 +1,24 @@
+{% extends 'base.html' %}
+
+{% block static_includes %}
+{% include 'base_static_includes.html' %}
+{% endblock %}
+
+{% block header %}
+{% include 'base_header.html' %}
+{% endblock %}
+{% block body %}
+<div class="row">
+    {% include 'base_side_navigation.html' %}
+    {% if not vendor_count or not product_count or not sale_history_count %}
+    {% include 'flexchain/snippets/welcome_message.html' %}
+    {% else %}
+    <div class="row">
+        <div class="col-md-4">{% include 'flexchain/snippets/shipping_advisory_card.html' %}</div>
+        <div class="col-md-4">{% include 'flexchain/snippets/air_advisory_card.html' %}</div>
+        <div class="col-md-4">{% include 'flexchain/snippets/missing_data_card.html' %}</div>
+    </div>
+    {# TODO Add Some type of Graph Here #}
+    {% endif %}
+</div>
+{% endblock %}

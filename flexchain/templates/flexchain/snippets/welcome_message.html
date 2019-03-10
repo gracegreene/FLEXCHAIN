@@ -1,0 +1,16 @@
+<div class="card" style="width: 50rem;">
+    <div class="card-body">
+        <p>
+            Hello {{ request.user.get_username }},
+            <br>
+            <br>
+            Welcome to Flexchain! Your smart partner in managing {# TODO add company name here #} supply chain.<br>
+            To start using Flexchain please follow the steps provided below:<br>
+        </p>
+        <ol>
+            <li><a href="{% url 'vendor' %}">Add Vendors</a></li>
+            <li><a href="{% url 'product' %}">Add Product Details</a></li>
+            <li><a href="{% url 'product' %}">Add Sales History</a></li>
+        </ol>
+    </div>
+</div>
