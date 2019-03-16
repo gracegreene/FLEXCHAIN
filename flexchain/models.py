@@ -1,7 +1,9 @@
 from django.db import models
 from djmoney.models.fields import MoneyField
 from django.contrib.auth.models import User
-
+from django.db.models import Avg, Max, Min, Sum
+from datetime import datetime
+from datetime import timedelta
 
 class Vendor(models.Model):
     VENDOR_TYPE_CHOICES = (
@@ -88,6 +90,19 @@ class Product(models.Model):
 
     def __str__(self):
         return "{}".format(self.name)
+
+    def get_reorder_point(self, vendor_id):
+        prod_vend_object = ProductVendor.objects.get(product_sku=self.sku, vendor_id=vendor_id)
+        sales_average = Sales.objects.filter(product_sku=self.sku).aggregate(Avg('quantity_sold'))
+        forecast_sum = Forecast.objects.filter(product_sku=self.sku).aggregate(Sum('prediction'))
+        popup_add = EventSku.objects.filter(
+            product_sku=self.sku,
+            event_date__gt=datetime.now(),
+            event_date__lt=datetime.now() + timedelta(days=89)
+        ).aggregate(Sum('increase'))
+        safety_stock = forecast_sum + popup_add
+        reorder = (prod_vend_object.lead_time * sales_average) + safety_stock
+        return reorder
 
 
 class ProductVendor(models.Model):
@@ -213,6 +228,30 @@ class Sales(models.Model):
         return 'Sold {} of {}'.format(
             self.quantity_sold, self.sku.name
         )
+
+
+class Forecast(models.Model):
+    class Meta:
+        db_table = 'forecast'
+
+    product = models.ForeignKey(
+        Product,
+        on_delete=models.CASCADE,
+        db_column='product_sku',
+        to_field='sku'
+    )
+    prediction_date = models.DateTimeField(
+        auto_now_add=True,
+        blank=False,
+        null=False
+    )
+    prediction = models.BigIntegerField(
+        help_text='Forecasted demand',
+        null=False
+    )
+
+    def __str__(self):
+        return '{}'.format(self.name)
 
 
 class Event(models.Model):
