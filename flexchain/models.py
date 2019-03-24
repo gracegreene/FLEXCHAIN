@@ -42,6 +42,13 @@ class Vendor(models.Model):
         blank=False,
         null=False
     )
+    order_fixed_cost = MoneyField(
+        max_digits=14,
+        decimal_places=2,
+        default_currency='USD',
+        help_text='Fixed Cost when Ordering',
+        null=False
+    )
     vendor_type = models.TextField(
         help_text='Type of vendor',
         max_length=1,
@@ -51,6 +58,13 @@ class Vendor(models.Model):
         help_text='Method of delivery',
         max_length=1,
         choices=VENDOR_FREIGHT_TYPE_CHOICES
+    )
+    weight_tariff = MoneyField(
+        max_digits=14,
+        decimal_places=2,
+        default_currency='USD',
+        help_text='Variable cost for shipping in USD/lb',
+        null=False
     )
 
     class Meta:
@@ -87,21 +101,25 @@ class Product(models.Model):
         help_text='Price of the Product',
         null=False
     )
+    unit_weight = models.BigIntegerField(
+        help_text='Weight in pounds of single item in individual package',
+    )
 
     def __str__(self):
         return "{}".format(self.name)
 
     def get_reorder_point(self, vendor_id):
         prod_vend_object = ProductVendor.objects.get(product_sku=self.sku, vendor_id=vendor_id)
-        sales_average = Sales.objects.filter(product_sku=self.sku).aggregate(Avg('quantity_sold'))
+        weekly_sales_average = Sales.objects.filter(product_sku=self.sku).aggregate(Avg('quantity_sold'))
+        weekly_sales_maximum = Sales.objects.filter(product_sku=self.sku).aggregate(Max('quantity_sold'))
         forecast_sum = Forecast.objects.filter(product_sku=self.sku).aggregate(Sum('prediction'))
         popup_add = EventSku.objects.filter(
             product_sku=self.sku,
             event_date__gt=datetime.now(),
             event_date__lt=datetime.now() + timedelta(days=89)
         ).aggregate(Sum('increase'))
-        safety_stock = forecast_sum + popup_add
-        reorder = (prod_vend_object.lead_time * sales_average) + safety_stock
+        safety_stock = ((weekly_sales_maximum - weekly_sales_average) * prod_vend_object.lead_time) + popup_add
+        reorder = (prod_vend_object.lead_time * weekly_sales_average) + safety_stock
         return reorder
 
 
@@ -197,6 +215,13 @@ class Inventory(models.Model):
         help_text='Amount of products being returned.',
         null=False
     )
+    amount_incoming_order = models.BigIntegerField(
+        help_text='Amount of products ordered from supplier arriving by next week.',
+        null=False
+    )
+
+    def current_inventory(self, product_sku):
+        return amount_on_hand + amount_incoming_order + amount_pending_return - amount_back_order
 
     def __str__(self):
         return '{}'.format(self.sku.name)
