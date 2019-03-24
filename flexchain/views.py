@@ -1,17 +1,198 @@
 from django.shortcuts import render
-from .models import Vendor, Product, Sales, Inventory
-from .forms import CSVProductUploadForm, CSVVendorUploadForm, EventProductFormsetFactory, EventForm
+from .models import Vendor, Product, Sales, Inventory, ProductVendor
+from .forms import CSVProductUploadForm, CSVVendorUploadForm, EventProductFormsetFactory, EventForm, InitialCSVUploadForm, EventProductHelper
 from django_datatables.datatable import *
 from django_datatables import column
 from datetime import datetime
+from django.contrib import messages
+import dateutil.parser
 import csv
 
 
 def home(request):
     context = dict()
+    form = InitialCSVUploadForm()
+    if request.method == 'POST':
+        # Handle if there are validation errors with the form.
+        if not form.is_valid:
+            context['vendor_count'] = Vendor.objects.exists()
+            context['product_count'] = Product.objects.exists()
+            context['sale_history_count'] = Sales.objects.exists()
+            messages.error(request, form.errors)
+            return render(request, 'flexchain/index.html')
+        # Form has no errors currently on happy path , still need to read csv files
+        vendor_file = request.FILES.get('vendor_file')
+        vendor_file_contents = ""
+        for chunk in vendor_file.chunks():
+            vendor_file_contents = vendor_file_contents + chunk.decode('utf-8')
+
+        current_line = 0
+        vendor_csv_reader = csv.DictReader(vendor_file_contents.splitlines())
+        for dictionary_csv_vendor_entry in vendor_csv_reader:
+            current_line = current_line + 1
+            vendor_name = dictionary_csv_vendor_entry.get('Vendor Name', None)
+            channel = dictionary_csv_vendor_entry('Channel', None)
+            contact_person = dictionary_csv_vendor_entry('Contact Person', None)
+            contact_email = dictionary_csv_vendor_entry('Contact Email', None)
+            vendor_type = dictionary_csv_vendor_entry('Vendor Type', None)
+            address = dictionary_csv_vendor_entry('Address', None)
+            if (
+                vendor_name is None or
+                channel is None or channel is not 'Land' or channel is not 'Sea' or channel is not 'Air' or
+                contact_person is None or
+                contact_email is None or
+                vendor_type is None or
+                address is None
+            ):
+                #TODO Handle error here
+                error_message = "Invalid entry in csv, line: {current_line}".format(current_line=current_line)
+            else:
+                # Convert Vendor Freight Type to abbreviated version for database
+                for freight_type in Vendor.VENDOR_FREIGHT_TYPE_CHOICES:
+                    if freight_type[1] == channel:
+                        channel = freight_type[0]
+
+                # Convert Vendor Type Choice to abbreviated version for database
+                for vendor_type_choice in Vendor.VENDOR_TYPE_CHOICES:
+                    if vendor_type_choice[1] == vendor_type:
+                        vendor_type = vendor_type_choice[0]
+
+                Vendor.objects.update_or_create(
+                    vendor_name = vendor_name,
+                    contact_person = contact_person,
+                    email = contact_email,
+                    freight_type = channel,
+                    vendor_type = vendor_type,
+                    address = address
+                )
+        # Remove file contents for memory resources
+        vendor_file_contents = None
+
+        product_file = request.FILES.get('product_file')
+        product_file_contents = ""
+        for chunk in product_file.chunks():
+            product_file_contents = product_file_contents + chunk.decode('utf-8')
+
+        product_csv_reader = csv.DictReader(product_file_contents.splitlines())
+        for dictionary_csv_product_entry in product_csv_reader:
+            sku = dictionary_csv_product_entry.get('SKU', None)
+            product_name = dictionary_csv_product_entry.get('Product Name', None)
+            vendor = dictionary_csv_product_entry.get('Vendor', None)
+            price = dictionary_csv_product_entry.get('Price', None)
+            moq = dictionary_csv_product_entry.get('MOQ', None)
+            cost = dictionary_csv_product_entry.get('Cost', None)
+            average_lead_time = dictionary_csv_vendor_entry('Average Lead Time', None)
+
+            if (
+                sku is None or
+                product_name is None or
+                vendor is None or
+                price is None or
+                moq is None or
+                cost is None or
+                average_lead_time is None
+            ):
+                #TODO handle error here.
+                pass
+            vendor_exists = Vendor.objects.exists(vendor_name=vendor)
+            if not vendor_exists:
+                #TODO Throw error here
+                pass
+
+            vendor = Vendor.objects.get(vendor_name=vendor)
+            Product.objects.update_or_create(
+                sku=sku,
+                name=product_name,
+                price=price
+            )
+            ProductVendor.objects.update_or_create(
+                product_sku=sku,
+                vendor=vendor,
+                cost=cost,
+                moq=moq,
+                lead_time=average_lead_time
+            )
+        # Clear file contents to remove memory resources
+        product_file_contents = None
+
+        inventory_file = request.FILES.get('inventory_file')
+        inventory_file_contents = ""
+
+        for chunk in inventory_file.chunks():
+            inventory_file_contents = inventory_file_contents + chunk.decode('utf-8')
+
+        inventory_csv_reader = csv.DictReader(inventory_file_contents.splitlines())
+        for dictionary_csv_inventory_entry in inventory_csv_reader:
+            sku = dictionary_csv_product_entry.get('SKU', None)
+            date = dictionary_csv_product_entry.get('Date', None)
+            on_hand = dictionary_csv_product_entry.get('On Hand', None)
+            back_order = dictionary_csv_product_entry.get('Back Order', None)
+            pending_return = dictionary_csv_product_entry.get('Pending Return', None)
+            if (
+                sku is None or
+                date is None or
+                on_hand is None or
+                back_order is None or
+                pending_return is None
+            ):
+                #TODO add validation error
+                pass
+
+            date_time_object = dateutil.parser.parse(date)
+
+            Inventory.objects.get_or_create(
+                product_sku=sku,
+                recorded_date=date_time_object,
+                amount_on_hand=on_hand,
+                amount_back_order=back_order,
+                amount_pending_return=pending_return
+            )
+
+        # Clear file contents to remove memory resources
+        inventory_file_contents = None
+
+
+        sales_file = request.FILES.get('sales_file')
+
+        sales_file_contents = ""
+        for chunk in sales_file.chunks():
+            sales_file_contents = sales_file_contents + chunk.decode('utf-8')
+
+        sales_csv_reader = csv.DictReader(sales_file_contents.splitlines())
+
+        for dictionary_csv_sales_entry in sales_csv_reader:
+            sku = dictionary_csv_sales_entry.get('SKU', None)
+            date = dictionary_csv_sales_entry.get('Date', None)
+            amount = dictionary_csv_sales_entry.get('Amount', None)
+
+            if (
+                sku is None or
+                date is None or
+                amount is None
+            ):
+                # TODO create validation error here
+                pass
+
+            date_time_object = dateutil.parser.parse(date)
+
+            Sales.objects.create(
+                product_sku=sku,
+                sales_date=date_time_object,
+                quantity_sold=amount
+            )
+
+        #Clear file contents to remove memory resources
+        sales_file_contents = None
+
+        return render(request, 'flexchain/index.html', context=context)
+
+    # Case that the request method is NOT POST
+    context = dict()
     context['vendor_count'] = Vendor.objects.exists()
     context['product_count'] = Product.objects.exists()
+    context['inventory_count'] = Inventory.objects.exists()
     context['sale_history_count'] = Sales.objects.exists()
+    context['csv_upload_form'] = InitialCSVUploadForm
     return render(request, 'flexchain/index.html', context=context)
 
 
@@ -144,12 +325,13 @@ def task(request):
 def event(request):
     context = dict()
     context['event_form'] = EventForm()
-    context['event_product_formset'] = EventProductFormsetFactory
+    context['event_product_formset'] = EventProductFormsetFactory()
+    context['event_product_helper'] = EventProductHelper()
     return render(request, 'flexchain/event.html', context=context)
 
 
 def create_event(request):
     context = dict()
     context['event_form'] = EventForm()
-    context['event_product_formset'] = EventProductFormsetFactory
+    context['event_product_formset'] = EventProductFormsetFactory()
     return render(request, 'flexchain/add_event.html', context=context)

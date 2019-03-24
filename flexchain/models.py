@@ -12,7 +12,8 @@ class Vendor(models.Model):
     )
 
     VENDOR_FREIGHT_TYPE_CHOICES = (
-        ('S', 'Ship'),
+        ('L', 'Land'),
+        ('S', 'Sea'),
         ('A', 'Air')
     )
     vendor_name = models.CharField(
@@ -76,10 +77,6 @@ class Product(models.Model):
         blank=False,
         max_length=40
     )
-    collection = models.CharField(
-        help_text='Collection Product Belongs To',
-        max_length=40
-    )
     price = MoneyField(
         max_digits=14,
         decimal_places=2,
@@ -129,10 +126,6 @@ class ProductVendor(models.Model):
     moq = models.BigIntegerField(
         null=False,
         help_text='Minimum Order Quantity',
-    )
-    lead_time = models.DurationField(
-        help_text='Time it takes for delivery of item',
-        null=False
     )
 
     def __str__(self):

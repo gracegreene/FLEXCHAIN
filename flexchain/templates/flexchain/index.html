@@ -10,7 +10,7 @@
 {% block body %}
 <div class="row">
     {% include 'base_side_navigation.html' %}
-    {% if not vendor_count or not product_count or not sale_history_count %}
+    {% if not vendor_count or not product_count or not sale_history_count or not inventory_count %}
     {% include 'flexchain/snippets/welcome_message.html' %}
     {% else %}
     <div class="row">

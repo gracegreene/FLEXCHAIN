@@ -19,9 +19,30 @@
             </div>
             <div class="card-body">
                 {% crispy event_form %}
-                <table>
-                    {% crispy event_product_formset %}
+                {{ event_product_formset.management_form }}
+                {{ event_product_formset.non_form_errors }}
+                {{ event_product_formset.management_form }}
+                <table class="table">
+                    <thead>
+                    <tr>
+                        {% for form in event_product_formset|first %}
+                            {% for field in form %}
+                                <td>{{ field.label_tag   }}</td>
+                            {% endfor %}
+                        {% endfor %}
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for form in event_product_formset %}
+                        <tr>
+                        {% for field in form %}
+                            <td>{{ field }}</td>
+                        {% endfor %}
+                        </tr>
+                    {% endfor %}
+                    </tbody>
                 </table>
+{#                {% crispy event_product_formset.as_table event_product_helper %}#}
                 <input class="btn btn-primary" type="submit" value="Create">
             </div>
         </div>

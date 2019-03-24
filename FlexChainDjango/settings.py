@@ -37,7 +37,6 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'crispy_forms',
     'flexchain',
-    'background_task',
     'djmoney',
     'django_datatables',
 ]
@@ -84,7 +83,7 @@ DATABASES = {
         'NAME': 'FLEXCHAIN',
         'USER': 'flexadmin',
         'PASSWORD': 'flex',
-        'HOST': 'localhost',
+        'HOST': '192.168.75.134',
         'PORT': '3306',
         'OPTIONS': {
             'autocommit': True,

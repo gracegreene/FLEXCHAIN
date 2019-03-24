@@ -1,3 +1,5 @@
+{% load crispy_forms_tags %}
+
 <div class="card" style="width: 50rem;">
     <div class="card-body">
         <p>
@@ -5,12 +7,18 @@
             <br>
             <br>
             Welcome to Flexchain! Your smart partner in managing {# TODO add company name here #} supply chain.<br>
-            To start using Flexchain please follow the steps provided below:<br>
+            Please add the required files below to kick start your Flexchain!<br>
         </p>
-        <ol>
-            <li><a href="{% url 'vendor' %}">Add Vendors</a></li>
-            <li><a href="{% url 'product' %}">Add Product Details</a></li>
-            <li><a href="{% url 'product' %}">Add Sales History</a></li>
-        </ol>
+        <form action="{% url 'home' %}" method="post" enctype="multipart/form-data">
+          {% csrf_token %} {# Prevents other websites from submitting this form #}
+              {% for field in csv_upload_form %}
+                {% for error in field.errors %}
+                    <div class="alert alert-danger">
+                        <strong>{{ error|escape }}</strong>
+                    </div>
+                {% endfor %}
+            {% endfor %}
+          {% crispy csv_upload_form %}
+      </form>
     </div>
 </div>
