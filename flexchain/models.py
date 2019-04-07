@@ -83,7 +83,7 @@ class Product(models.Model):
         help_text='Product SKU',
         primary_key=True,
         blank=False,
-        max_length=4,
+        max_length=10,
         unique=True
     )
     name = models.CharField(
@@ -98,7 +98,7 @@ class Product(models.Model):
         help_text='Price of the Product',
         null=False
     )
-    unit_weight = models.BigIntegerField(
+    unit_weight = models.FloatField(
         help_text='Weight in pounds of single item in individual package',
     )
 

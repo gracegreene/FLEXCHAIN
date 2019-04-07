@@ -83,7 +83,7 @@ DATABASES = {
         'NAME': 'FLEXCHAIN',
         'USER': 'flexadmin',
         'PASSWORD': 'flex',
-        'HOST': '192.168.75.134',
+        'HOST': 'localhost',
         'PORT': '3306',
         'OPTIONS': {
             'autocommit': True,

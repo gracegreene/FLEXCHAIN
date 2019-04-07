@@ -31,11 +31,11 @@ def home(request):
         for dictionary_csv_vendor_entry in vendor_csv_reader:
             current_line = current_line + 1
             vendor_name = dictionary_csv_vendor_entry.get('Vendor Name', None)
-            channel = dictionary_csv_vendor_entry('Channel', None)
-            contact_person = dictionary_csv_vendor_entry('Contact Person', None)
-            contact_email = dictionary_csv_vendor_entry('Contact Email', None)
-            vendor_type = dictionary_csv_vendor_entry('Vendor Type', None)
-            address = dictionary_csv_vendor_entry('Address', None)
+            channel = dictionary_csv_vendor_entry.get('Channel', None)
+            contact_person = dictionary_csv_vendor_entry.get('Contact Person', None)
+            contact_email = dictionary_csv_vendor_entry.get('Contact Email', None)
+            vendor_type = dictionary_csv_vendor_entry.get('Vendor Type', None)
+            address = dictionary_csv_vendor_entry.get('Address', None)
             if (
                 vendor_name is None or
                 channel is None or channel is not 'Land' or channel is not 'Sea' or channel is not 'Air' or
@@ -77,37 +77,41 @@ def home(request):
         for dictionary_csv_product_entry in product_csv_reader:
             sku = dictionary_csv_product_entry.get('SKU', None)
             product_name = dictionary_csv_product_entry.get('Product Name', None)
-            vendor = dictionary_csv_product_entry.get('Vendor', None)
+            vendor_name = dictionary_csv_product_entry.get('Vendor', None)
             price = dictionary_csv_product_entry.get('Price', None)
+            unit_weight = dictionary_csv_product_entry.get('Unit Weight', None)
             moq = dictionary_csv_product_entry.get('MOQ', None)
             cost = dictionary_csv_product_entry.get('Cost', None)
-            average_lead_time = dictionary_csv_vendor_entry('Average Lead Time', None)
+            average_lead_time = dictionary_csv_vendor_entry.get('Average Lead Time', None)
 
             if (
                 sku is None or
                 product_name is None or
-                vendor is None or
+                    vendor_name is None or
                 price is None or
                 moq is None or
                 cost is None or
-                average_lead_time is None
+                    average_lead_time is None or
+                    unit_weight is None
             ):
                 #TODO handle error here.
                 pass
-            vendor_exists = Vendor.objects.exists(vendor_name=vendor)
+            vendor_exists = Vendor.objects.filter(vendor_name=vendor_name).exists()
             if not vendor_exists:
                 #TODO Throw error here
                 pass
-
-            vendor = Vendor.objects.get(vendor_name=vendor)
+            print(dictionary_csv_product_entry)
+            print(price)
+            vendor_obj = Vendor.objects.filter(vendor_name=vendor_name).first()
             Product.objects.update_or_create(
                 sku=sku,
                 name=product_name,
-                price=price
+                price=price,
+                unit_weight=unit_weight
             )
             ProductVendor.objects.update_or_create(
-                product_sku=sku,
-                vendor=vendor,
+                product__sku=sku,
+                vendor=vendor_obj,
                 cost=cost,
                 moq=moq,
                 lead_time=average_lead_time
