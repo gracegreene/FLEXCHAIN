@@ -109,16 +109,6 @@ EventProductFormsetFactory = forms.inlineformset_factory(
     can_delete=True
 )
 
-class EventProductHelper(FormHelper):
-    def __init__(self, *args, **kwargs):
-        super(EventProductHelper, self).__init__(*args, **kwargs)
-        self.form_tag = False
-        self.layout = Layout(
-            Fieldset('Add Product', 'product'),
-            Fieldset('', 'increase'),
-        )
-
-
 class EventForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(EventForm, self).__init__(*args, **kwargs)
@@ -126,6 +116,9 @@ class EventForm(forms.ModelForm):
         self.layout = Layout(
             Fieldset('Create a New Event', 'Name')
         )
+        self.helper = FormHelper()
+        self.helper.add_input(Submit('submit', 'Create', css_class='btn btn-primary'))
+        self.helper.form_method = 'POST'
 
     class Meta:
         model = Event

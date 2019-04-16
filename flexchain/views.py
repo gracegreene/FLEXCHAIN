@@ -1,6 +1,7 @@
-from django.shortcuts import render
-from .models import Vendor, Product, Sales, Inventory, ProductVendor
-from .forms import CSVProductUploadForm, CSVVendorUploadForm, EventProductFormsetFactory, EventForm, InitialCSVUploadForm, EventProductHelper
+from django.shortcuts import render, redirect
+from .models import Vendor, Product, Sales, Inventory, ProductVendor, EventSku, Event
+from .forms import CSVProductUploadForm, CSVVendorUploadForm, EventProductFormsetFactory, EventForm, \
+    InitialCSVUploadForm
 from django_datatables.datatable import *
 from django_datatables import column
 from datetime import datetime
@@ -213,6 +214,39 @@ class ProductDatatable(Datatable):
         title = 'Products'
 
 
+class EventProductDatatable(Datatable):
+    sku = column.TextColumn(title="SKU")
+    name = column.TextColumn(title="Name")
+    price = column.Column(title="Price")
+    amount = column.StringColumn(title="Amount")
+
+    class Meta:
+        model = Product
+        searching = True
+        search_fields = ['name']
+        search_min_length = 3
+        title = 'Products'
+
+    def render_amount(self, row):
+        return """<input name="{}" type="number"></>""".format(row['sku'])
+
+
+class EventDatatable(Datatable):
+    name = column.StringColumn(title='Name', value='name', link='eventproduct', link_args=['id'])
+    date = column.DateColumn(title='Date')
+
+    class Meta:
+        model = Event
+        searching = True
+        search_fields = ['name']
+        search_min_length = 3
+        title = 'Events'
+        extra_fields = ('id',)
+
+    # def render_name(self, row):
+    #     return """<a href="{}">{}</a>""".format(reverse('eventproduct', row['id']), row['name'])
+
+
 def product(request):
     if request.method == 'POST':
         form = CSVProductUploadForm(request.POST, request.FILES)
@@ -328,14 +362,27 @@ def task(request):
 
 def event(request):
     context = dict()
+    if request.method == 'POST':
+        form = EventForm(request.POST)
+        if not form.is_valid():
+            context['event_form'] = form
+            return render(request, 'flexchain/event.html', context=context)
+        event = form.save(commit=False)
+        event.save()
+        return redirect('eventproduct', event.id)
+    context['event_datatable'] = EventDatatable()
     context['event_form'] = EventForm()
-    context['event_product_formset'] = EventProductFormsetFactory()
-    context['event_product_helper'] = EventProductHelper()
     return render(request, 'flexchain/event.html', context=context)
 
 
-def create_event(request):
+def eventproduct(request, event_id):
+    if request.method == 'POST':
+        for key, value in request.POST.items():
+            if Product.objects.filter(sku=key).exists():
+                if value[0] == 0:
+                    continue
+                EventSku.objects.update_or_create(event_id=event_id, product_id=key, increase=value[0])
+        return redirect('event')
     context = dict()
-    context['event_form'] = EventForm()
-    context['event_product_formset'] = EventProductFormsetFactory()
-    return render(request, 'flexchain/add_event.html', context=context)
+    context['product_data_table'] = EventProductDatatable()
+    return render(request, 'flexchain/eventproduct.html', context=context)

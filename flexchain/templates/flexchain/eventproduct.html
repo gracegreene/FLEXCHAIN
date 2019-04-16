@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% block static_includes %}
+{% include 'base_static_includes.html' %}
+{% endblock %}
+
+{% block header %}
+{% include 'base_header.html' %}
+{% endblock %}
+
+{% block body %}
+<div class="row">
+    {% include 'base_side_navigation.html' %}
+    <div class="col-md-10">
+        <form action="" method="post">
+            {% csrf_token %}
+            {{ product_data_table.render }}
+            <input type="submit" class="btn btn-primary" value="Add Products to Event">
+        </form>
+    </div>
+</div>
+{% endblock %}

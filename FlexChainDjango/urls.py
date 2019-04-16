@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include, re_path
-from flexchain.views import home, product, vendor, task, event
+from flexchain.views import home, product, vendor, task, event, eventproduct
 
 urlpatterns = [
     path('admin/', admin.site.urls, name="admin"),
@@ -24,5 +24,6 @@ urlpatterns = [
     path('vendor/', vendor, name="vendor"),
     path('task/', task, name="task"),
     path('event/', event, name="event"),
+    path('event/<int:event_id>/producer', eventproduct, name='eventproduct'),
     re_path(r'^__django_datatables__/', include('django_datatables.urls')),
 ]
